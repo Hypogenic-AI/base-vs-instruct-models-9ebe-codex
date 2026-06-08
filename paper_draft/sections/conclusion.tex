@@ -1,0 +1,6 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+We asked where a base model and its instruction-tuned counterpart differ token by token, and whether the failures of a learned divergence predictor reveal useful surprises. On \qwenbase versus \qweninstruct, a rich predictor explains substantially more held-out $\log(1+\klinstbase)$ than mean and position/source baselines. Its residuals recover known shift zones such as generation starts, assistant markers, refusal-style tokens, and code/math, while also surfacing an unexpected \wikitext narrative cluster.
+
+The central takeaway is that predictability and surprise are both useful. Predictable KL tells us which base-vs-instruct changes follow ordinary source, boundary, and token cues. Residual KL tells us where those cues fail, giving researchers a compact set of spans for human inspection and mechanistic follow-up. Future work should replicate the analysis across larger same-family model pairs, add base-plus-prompt controls, and expand natural-text sampling to determine whether the \wikitext outlier is isolated or part of a broader post-training shift.

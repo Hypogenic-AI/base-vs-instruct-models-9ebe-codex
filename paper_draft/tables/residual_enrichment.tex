@@ -1,0 +1,17 @@
+\begin{table}[t]
+\centering
+\caption{Enrichment among high-residual tokens. High residuals are the top 2\% of held-out tokens by absolute rich-predictor residual.}
+\label{tab:residual_enrichment}
+\begin{tabular}{@{}llr@{}}
+\toprule
+\textbf{Feature} & \textbf{Value} & \textbf{Enrichment} \\
+\midrule
+Segment & generation start & \textbf{5.17$\times$} \\
+Token class & assistant marker & 4.78$\times$ \\
+Token class & refusal style & 4.54$\times$ \\
+Token class & code/math & 3.49$\times$ \\
+Source & \wikitext & 3.13$\times$ \\
+Token class & capitalized & 1.90$\times$ \\
+\bottomrule
+\end{tabular}
+\end{table}

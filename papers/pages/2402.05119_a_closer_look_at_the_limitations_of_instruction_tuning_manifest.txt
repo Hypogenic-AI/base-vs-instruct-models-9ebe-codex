@@ -1,0 +1,12 @@
+PDF: papers/2402.05119_a_closer_look_at_the_limitations_of_instruction_tuning.pdf
+Total pages: 31
+Pages per chunk: 5
+
+Chunks:
+  2402.05119_a_closer_look_at_the_limitations_of_instruction_tuning_chunk_001.pdf: pages 1-5
+  2402.05119_a_closer_look_at_the_limitations_of_instruction_tuning_chunk_002.pdf: pages 6-10
+  2402.05119_a_closer_look_at_the_limitations_of_instruction_tuning_chunk_003.pdf: pages 11-15
+  2402.05119_a_closer_look_at_the_limitations_of_instruction_tuning_chunk_004.pdf: pages 16-20
+  2402.05119_a_closer_look_at_the_limitations_of_instruction_tuning_chunk_005.pdf: pages 21-25
+  2402.05119_a_closer_look_at_the_limitations_of_instruction_tuning_chunk_006.pdf: pages 26-30
+  2402.05119_a_closer_look_at_the_limitations_of_instruction_tuning_chunk_007.pdf: page 31

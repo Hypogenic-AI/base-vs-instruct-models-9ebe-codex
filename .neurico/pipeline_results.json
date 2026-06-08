@@ -1,0 +1,27 @@
+{
+  "success": true,
+  "stages": {
+    "resource_finder": {
+      "success": true,
+      "completion_marker": "/workspaces/base-vs-instruct-models-9ebe-codex/.resource_finder_complete",
+      "outputs": {
+        "literature_review": "/workspaces/base-vs-instruct-models-9ebe-codex/literature_review.md",
+        "resources_catalog": "/workspaces/base-vs-instruct-models-9ebe-codex/resources.md",
+        "papers_dir": "/workspaces/base-vs-instruct-models-9ebe-codex/papers",
+        "datasets_dir": "/workspaces/base-vs-instruct-models-9ebe-codex/datasets",
+        "code_dir": "/workspaces/base-vs-instruct-models-9ebe-codex/code"
+      },
+      "log_file": "/workspaces/base-vs-instruct-models-9ebe-codex/logs/resource_finder_codex.log",
+      "transcript_file": "/workspaces/base-vs-instruct-models-9ebe-codex/logs/resource_finder_codex_transcript.jsonl",
+      "elapsed_time": 971.0356040000916
+    },
+    "experiment_runner": {
+      "success": true,
+      "return_code": 0,
+      "elapsed_time": 1093.568954706192,
+      "log_file": "/workspaces/base-vs-instruct-models-9ebe-codex/logs/execution_codex.log",
+      "transcript_file": "/workspaces/base-vs-instruct-models-9ebe-codex/logs/execution_codex_transcript.jsonl"
+    }
+  },
+  "work_dir": "/workspaces/base-vs-instruct-models-9ebe-codex"
+}

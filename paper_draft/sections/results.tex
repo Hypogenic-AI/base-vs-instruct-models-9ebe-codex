@@ -1,0 +1,55 @@
+\section{Results}
+\label{sec:results}
+
+\subsection{Source-Level Divergence}
+\label{sec:source_results}
+
+\input{tables/source_stats}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.48\linewidth]{figures/kl_by_source.png}
+\hfill
+\includegraphics[width=0.48\linewidth]{figures/kl_position_trend.png}
+\caption{Token-level KL by source and position. \figleft shows that \justeval has the largest mean KL and top-1 disagreement, while \alpaca has the lowest mean KL. \figright shows that divergence is concentrated near boundaries and early positions rather than being uniform across traces.}
+\label{fig:kl_landscape}
+\end{figure}
+
+\tabref{tab:source_stats} reports divergence by source. Mean forward KL ranges from 0.071 for \alpaca to 0.109 for \justeval. The top-1 disagreement rate follows a similar pattern: \justeval has the largest disagreement rate at 0.187, while \alpaca has the lowest at 0.128. These values confirm that instruction and boundary-heavy sources are more divergent on average, but the differences are not limited to prompt datasets. \wikitext, a natural-text baseline, has mean KL 0.096 and a P99 KL of 1.145.
+
+Generation-start positions are much more divergent than ordinary continuations. As shown in \tabref{tab:generation_start}, \beavertails has generation-start mean KL 0.802 and P90 KL 2.085, compared with a source-wide mean KL of 0.104. \arena, \alpaca, and \justeval also show elevated generation-start KL. This supports the view that response boundaries are a major site of instruction-tuning shift.
+
+\input{tables/generation_start}
+
+\input{tables/source_tests}
+
+At the per-example level, the strongest Holm-corrected source differences are \alpaca versus \justeval and \alpaca versus \beavertails. The \alpaca-vs-\justeval comparison has Holm-corrected $p=8.66 \times 10^{-5}$ and Cliff's delta $-0.471$; the \alpaca-vs-\beavertails comparison has Holm-corrected $p=0.00710$ and Cliff's delta $-0.356$. Most other pairwise source differences do not remain significant after correction, including \arena versus \wikitext.
+
+\subsection{Predicting Token-Level KL}
+\label{sec:predictor_results}
+
+\input{tables/predictor_results}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.48\linewidth]{figures/predictor_scatter.png}
+\hfill
+\includegraphics[width=0.48\linewidth]{figures/residual_token_class_enrichment.png}
+\caption{Prediction and residual analysis. \figleft shows held-out rich-predictor predictions against actual $\log(1+\klinstbase)$. \figright shows enrichment among the top 2\% absolute residuals; known boundary and assistant-style classes are enriched, but \wikitext is also strongly overrepresented.}
+\label{fig:prediction_residuals}
+\end{figure}
+
+\tabref{tab:predictor_results} shows that token-level KL is predictable above simple baselines. The \possource baseline improves MAE from 0.0756 to 0.0601 and explains 27.10\% of held-out variance. The \richpredictor further reduces MAE to 0.0460, improves RMSE to 0.1183, and raises Spearman correlation to 0.795. The grouped bootstrap mean rich-minus-position MAE difference is $-0.0142$, with a 95\% confidence interval of $[-0.0163,-0.0118]$. Because the interval is entirely below zero, the improvement is stable across held-out-example resampling.
+
+\subsection{Residuals Identify Expected and Unexpected Shifts}
+\label{sec:residual_results}
+
+\input{tables/residual_enrichment}
+
+The rich predictor's median absolute residual is 0.0202. We define high-residual tokens as the top 2\% by absolute residual, corresponding to a threshold of 0.2961. \tabref{tab:residual_enrichment} shows that high residuals recover expected categories: generation starts are enriched 5.17$\times$, assistant markers 4.78$\times$, refusal-style tokens 4.54$\times$, and code/math tokens 3.49$\times$. The surprising enrichment is source-level: \wikitext tokens are enriched 3.13$\times$ among high residuals.
+
+\input{tables/residual_examples}
+
+\tabref{tab:residual_examples} summarizes representative residual failures. The largest positive residuals are dominated by a single \wikitext narrative example. In the top 150 absolute residuals, 84 are \wikitext rows, and 61 come from \texttt{wikitext:4314}. This is not instruction boilerplate: the snippets are ordinary narrative text, yet the instruct and base distributions sharply diverge. One row has the same decoded top-1 token for both models, but KL is 4.282 and the residual is 1.655, showing that argmax agreement can hide large full-distribution changes.
+
+Large negative residuals often appear near explicit \texttt{Assistant} markers. The predictor learns that assistant markers and generation starts are usually high-divergence zones, but in several held-out contexts both models assign similar distributions to the literal marker. This failure mode is useful: it shows that assistant markup is not uniformly divergent. The local context and whether the boundary is already explicit affect whether the base model agrees with the instruct model.

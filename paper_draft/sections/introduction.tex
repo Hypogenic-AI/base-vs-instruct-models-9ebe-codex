@@ -1,0 +1,24 @@
+\section{Introduction}
+\label{sec:introduction}
+
+Instruction tuning makes a base language model easier to use, but it does not change every next-token distribution in the same way. Some changes are expected: an instruct model should be more ready to start an answer, follow chat markup, and refuse unsafe requests. Other changes are harder to anticipate. The practical question is not only where two models differ, but where they differ more or less than ordinary surface cues predict.
+
+This question matters for alignment auditing and model diffing. A researcher comparing a base model with its instruct version can compute token-level divergences, but a long table of logits is not an explanation. If ordinary factors such as source, position, prompt boundary, token class, and base uncertainty explain much of the divergence, then the remaining residuals are a small, inspectable set of cases where the post-training effect is surprising.
+
+Prior work shows that many base-to-chat changes are concentrated around stylistic tokens, response openings, and safety phrases \citep{lin2023unlocking,ghosh2024limitations,qi2024safety}. However, most analyses report aggregate shifts or pre-defined token categories. Our main question is different: {\bf after learning the obvious regularities, what remains surprising?}
+
+We propose \methodname, a simple residual-auditing workflow. We score a same-family base/instruct pair on identical teacher-forced contexts, train predictors of $\log(1+\klinstbase)$, and inspect held-out residuals. The workflow is summarized in \figref{fig:method}. It treats prediction as a filter rather than an end goal: accurate predictions tell us which shifts are ordinary, and large residuals tell us where to look next.
+
+Our experiment uses \qwenbase and \qweninstruct with a shared 151,936-token vocabulary. Across 299 encoded examples and 24,049 token positions, the rich predictor achieves 0.0460 held-out MAE, compared with 0.0601 for a position/source baseline and 0.0756 for a mean baseline. The improvement over the position/source baseline is stable under 500 grouped bootstrap resamples. More importantly, high residuals recover known high-shift regions and surface an unexpected \wikitext narrative cluster: 84 of the top 150 absolute residuals are \wikitext tokens, and 61 come from one example.
+
+Our contributions are:
+\begin{itemize}
+\setlength{\itemsep}{0pt}
+\setlength{\topsep}{0pt}
+\item We measure full-vocabulary, teacher-forced token divergence between a real base model and its instruction-tuned counterpart across instruction, safety, chat, and natural-text sources.
+\item We train and evaluate KL-divergence predictors under an example-grouped split, showing that a rich feature set improves MAE by 0.0142 over a position/source baseline.
+\item We analyze residual failures quantitatively and qualitatively, showing that prediction misses are enriched for interpretable token classes and for an unexpected natural-text outlier.
+\item We identify a key audit lesson: top-1 agreement can hide large full-distribution shifts, so residual analysis should inspect distributional divergence rather than only argmax changes.
+\end{itemize}
+
+The rest of the paper reviews related work in instruction tuning and model diffing (\secref{sec:related}), defines the scoring and prediction procedure (\secref{sec:methodology}), reports quantitative and residual results (\secref{sec:results}), and discusses implications and limitations (\secref{sec:discussion}).

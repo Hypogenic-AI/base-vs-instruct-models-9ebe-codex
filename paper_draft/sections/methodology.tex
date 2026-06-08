@@ -1,0 +1,57 @@
+\section{Methodology}
+\label{sec:methodology}
+
+\begin{figure}[t]
+\centering
+\setlength{\fboxsep}{6pt}
+\begin{tabular}{@{}c@{\quad}c@{\quad}c@{}}
+\fbox{\begin{minipage}{0.27\linewidth}\centering
+\textbf{Score}\\
+teacher-forced prefixes under base and instruct models
+\end{minipage}}
+&
+\fbox{\begin{minipage}{0.27\linewidth}\centering
+\textbf{Predict}\\
+$\log(1+\klinstbase)$ from source, position, token, and base uncertainty
+\end{minipage}}
+&
+\fbox{\begin{minipage}{0.27\linewidth}\centering
+\textbf{Audit}\\
+rank residuals and inspect enriched token classes and sources
+\end{minipage}}
+\end{tabular}
+\caption{Overview of \methodname. The predictor is not the final object of study. We use it to subtract expected source, boundary, token-class, and uncertainty effects, then inspect the held-out locations where actual KL is much higher or lower than predicted.}
+\label{fig:method}
+\end{figure}
+
+\para{Problem formulation.}
+For a token context $c_t$, let $p_{\base}(\cdot \mid c_t)$ be the base-model next-token distribution and $p_{\inst}(\cdot \mid c_t)$ be the instruct-model distribution. Our primary target is the forward KL
+\begin{equation}
+d_t = \klinstbase
+= \sum_{v \in \gV} p_{\inst}(v \mid c_t)
+\log \frac{p_{\inst}(v \mid c_t)}{p_{\base}(v \mid c_t)}.
+\label{eq:kl}
+\end{equation}
+We train predictors on $y_t=\log(1+d_t)$ because token-level KL is right-skewed. Residuals are
+\begin{equation}
+r_t = y_t - \hat{y}_t,
+\label{eq:residual}
+\end{equation}
+where positive residuals mean actual divergence is higher than predicted and negative residuals mean the predictor expected more divergence than occurred.
+
+\para{Models.}
+We compare \qwenbase and \qweninstruct \citep{qwen2024modelcards}. This pair is useful because the two checkpoints are same-family, open-weight, and share the Qwen tokenizer. We used the Qwen instruct tokenizer, bfloat16 model forward passes, and float32 divergence computation. The final run used \texttt{cuda:0}.
+
+\para{Datasets.}
+We score five local datasets, shown in \tabref{tab:datasets}. Traces are capped at 224 tokens. For instruction, safety, and chat sources, we keep prompt and response segments when available. For prompt-only \justeval traces, we also score the generation-start distribution after the prompt.
+
+\input{tables/datasets}
+
+\para{Token-level scoring.}
+Each encoded trace is evaluated under both models on the same teacher-forced prefix. We save forward KL, reverse KL, Jensen-Shannon divergence, base entropy, base top probability, base top-1 margin, observed-token base log probability and rank, top-1 agreement, and decoded base/instruct top-1 tokens. Full-vocabulary KL is computed from float32 log-softmax values over the shared vocabulary.
+
+\para{Predictors and baselines.}
+All predictors target $\log(1+\klinstbase)$. The \meanbaseline baseline predicts the training mean. The \possource baseline uses source, segment, context position, normalized position, response-token index, and a generation-start flag. The \richpredictor adds token length, whitespace/newline/digit/capitalization flags, observed-token availability, base entropy, base top probability, base margin, observed-token log probability, observed-token rank, token class, frequent token identity, safety label, and frequent safety category. Both learned predictors use \texttt{HistGradientBoostingRegressor} from scikit-learn \citep{pedregosa2011scikit}.
+
+\para{Evaluation and statistics.}
+We split held-out data by example id, not token row, to avoid putting positions from the same trace in both train and test. The final split has 224 train examples and 75 test examples. We report MAE, RMSE, $R^2$, and Spearman correlation on held-out tokens. We estimate uncertainty with 500 grouped bootstrap resamples over held-out examples. For source comparisons, we compute per-example mean KL, run Mann-Whitney U tests, correct with Holm adjustment, and report Cliff's delta as an effect size.

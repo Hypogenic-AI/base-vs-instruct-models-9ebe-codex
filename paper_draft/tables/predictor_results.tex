@@ -1,0 +1,14 @@
+\begin{table}[t]
+\centering
+\caption{Held-out predictor performance on $\log(1+\klinstbase)$. Lower is better for MAE and RMSE; higher is better for $R^2$ and Spearman correlation. Best values are bolded.}
+\label{tab:predictor_results}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Model} & \textbf{MAE} & \textbf{RMSE} & \textbf{$R^2$} & \textbf{Spearman $r$} \\
+\midrule
+\meanbaseline baseline & 0.0756 & 0.1471 & -0.0007 & n/a \\
+\possource baseline & 0.0601 & 0.1256 & 0.2710 & 0.414 \\
+\richpredictor & \textbf{0.0460} & \textbf{0.1183} & \textbf{0.3533} & \textbf{0.795} \\
+\bottomrule
+\end{tabular}
+\end{table}

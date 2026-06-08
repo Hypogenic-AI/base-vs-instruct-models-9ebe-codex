@@ -1,0 +1,149 @@
+[
+  {
+    "name": "JUST-EVAL-INSTRUCT",
+    "source": "re-align/just-eval-instruct",
+    "location": "datasets/just_eval_instruct",
+    "task": "instruction prompt evaluation",
+    "splits": {
+      "test": 1000
+    },
+    "features": {
+      "train": [
+        "id",
+        "instruction",
+        "source_id",
+        "dataset",
+        "category",
+        "task",
+        "topic",
+        "difficulty",
+        "output",
+        "generator"
+      ]
+    },
+    "size_bytes": 217835,
+    "license": "unknown",
+    "notes": "1k diverse prompts used by URIAL/Unlocking Spell and follow-up analyses."
+  },
+  {
+    "name": "MT-Bench Prompts",
+    "source": "HuggingFaceH4/mt_bench_prompts",
+    "location": "datasets/mt_bench_prompts",
+    "task": "multi-turn instruction evaluation prompts",
+    "splits": {
+      "train": 80
+    },
+    "features": {
+      "train": [
+        "category",
+        "prompt",
+        "reference",
+        "prompt_id"
+      ]
+    },
+    "size_bytes": 49987,
+    "license": "unknown",
+    "notes": "80 two-turn benchmark prompts for instruction-following comparison."
+  },
+  {
+    "name": "Alpaca 52k",
+    "source": "tatsu-lab/alpaca",
+    "location": "datasets/alpaca_52k",
+    "task": "instruction-output SFT data",
+    "splits": {
+      "train": 52002
+    },
+    "features": {
+      "train": [
+        "instruction",
+        "input",
+        "output",
+        "text"
+      ]
+    },
+    "size_bytes": 46234517,
+    "license": "cc-by-nc-4.0 per original Alpaca data card",
+    "notes": "Classic 52k instruction-output pairs useful for teacher-forced divergence over aligned response style."
+  },
+  {
+    "name": "WikiText-2 Raw",
+    "source": "Salesforce/wikitext",
+    "location": "datasets/wikitext_2_raw",
+    "task": "natural language baseline corpus",
+    "splits": {
+      "test": 4358,
+      "train": 36718,
+      "validation": 3760
+    },
+    "features": {
+      "test": [
+        "text"
+      ],
+      "train": [
+        "text"
+      ],
+      "validation": [
+        "text"
+      ]
+    },
+    "size_bytes": 13538569,
+    "license": "Creative Commons Attribution-ShareAlike",
+    "notes": "Small natural-text corpus for contrasting base LM text continuation contexts against instruction/chat prompts."
+  },
+  {
+    "name": "BeaverTails 30k",
+    "source": "PKU-Alignment/BeaverTails",
+    "location": "datasets/beavertails_30k",
+    "task": "safety/refusal prompt-response data",
+    "splits": {
+      "train": 27186,
+      "test": 3021
+    },
+    "features": {
+      "train": [
+        "prompt",
+        "response",
+        "category",
+        "is_safe"
+      ],
+      "test": [
+        "prompt",
+        "response",
+        "category",
+        "is_safe"
+      ]
+    },
+    "size_bytes": 13130275,
+    "license": "unknown",
+    "notes": "Safety-labeled prompt-response data for high-divergence refusal and unsafe-request regions."
+  },
+  {
+    "name": "Chatbot Arena Conversations mirror",
+    "source": "dim/lmsys_chatbot_arena_conversations",
+    "location": "datasets/lmsys_chatbot_arena_33k",
+    "task": "real chat comparisons and prompts",
+    "splits": {
+      "train": 33000
+    },
+    "features": {
+      "train": [
+        "question_id",
+        "model_a",
+        "model_b",
+        "winner",
+        "judge",
+        "conversation_a",
+        "conversation_b",
+        "turn",
+        "anony",
+        "language",
+        "tstamp",
+        "openai_moderation",
+        "toxic_chat_tag"
+      ]
+    },
+    "size_bytes": 81275677,
+    "license": "cc / mirrored card",
+    "notes": "Open mirror of 33k Chatbot Arena conversations; used as an accessible substitute because lmsys/lmsys-chat-1m is gated."
+  }
+]

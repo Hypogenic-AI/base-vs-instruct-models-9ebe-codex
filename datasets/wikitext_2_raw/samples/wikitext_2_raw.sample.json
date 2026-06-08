@@ -1,0 +1,35 @@
+{
+  "test": [
+    {
+      "text": ""
+    },
+    {
+      "text": " = Robert Boulter = \n"
+    },
+    {
+      "text": ""
+    }
+  ],
+  "train": [
+    {
+      "text": ""
+    },
+    {
+      "text": " = Valkyria Chronicles III = \n"
+    },
+    {
+      "text": ""
+    }
+  ],
+  "validation": [
+    {
+      "text": ""
+    },
+    {
+      "text": " = Homarus gammarus = \n"
+    },
+    {
+      "text": ""
+    }
+  ]
+}

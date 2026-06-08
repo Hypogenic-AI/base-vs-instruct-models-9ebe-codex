@@ -1,0 +1,17 @@
+\section{Related Work}
+\label{sec:related}
+
+\para{Instruction tuning and superficial shifts.}
+Instruction tuning and RLHF are standard ways to turn pretrained language models into assistants \citep{wei2021finetuned,ouyang2022training,chung2022scaling,longpre2023flan}. These methods improve usability, but recent analyses show that many changes can be sparse and stylistic. \citet{lin2023unlocking} compare base and aligned models at the token-distribution level and argue that alignment often leaves top choices unchanged while shifting discourse and safety style. \citet{ghosh2024limitations} similarly find that instruction tuning can emphasize response-initiation and style tokens, and that full-parameter tuning can borrow surface patterns from instruction data. We build on this line of work by treating those expected shifts as predictable structure, then studying residual failures.
+
+\para{Prompt-based alignment controls.}
+Prompting and in-context examples can imitate part of instruction tuning. URIAL aligns base models through a system prompt and a few stylistic examples \citep{lin2023unlocking}, and \citet{zhao2024context} show that in-context alignment can approach but not fully replace instruction fine-tuning in many settings. Decoding-time approaches such as proxy tuning and nudging also use tuned-vs-untuned distribution differences as a steering signal \citep{liu2024proxy,fei2024nudging}. These works motivate future controls for our setting: if a residual cluster appears under both an instruct model and a base-plus-prompt condition, it may reflect prompt format rather than weight-level post-training.
+
+\para{Token-level safety and preference signals.}
+Several alignment methods and analyses operate directly at the token level. \citet{qi2024safety} show that safety alignment can be shallow, with divergence concentrated in the first output tokens. Token-level DPO uses per-token KL constraints as part of a preference objective \citep{zeng2024token}. Refusal-direction work identifies a low-dimensional mechanism mediating refusal behavior in chat models \citep{arditi2024refusal}. Our experiment does not claim a mechanistic explanation, but it uses token-level KL and residual enrichment to prioritize spans that such mechanistic tools could inspect.
+
+\para{Model diffing and interpretability.}
+Model diffing studies how fine-tuning changes internal computations. Crosscoders compare base and chat representations, but \citet{minder2025crosscoders} show that sparse dictionary methods can misattribute shared concepts as chat-specific without careful controls. This caution applies directly to residual auditing: large KL residuals are discovery targets, not final evidence of a causal mechanism. We therefore report residuals as triage signals and emphasize follow-up with prompt controls, top-$k$ probability inspection, and activation-level validation.
+
+\para{Datasets for divergence analysis.}
+We use datasets that cover distinct contexts where instruction tuning might matter. \alpaca supplies instruction-output traces \citep{taori2023alpaca}; \justeval comes from the URIAL evaluation setting \citep{lin2023unlocking}; \beavertails supplies safety-related prompt-response traces \citep{ji2023beavertails}; \arena provides real chat conversations \citep{zheng2023judging}; and \wikitext provides natural text outside an instruction setting \citep{merity2016pointer}. This mix lets us ask whether residual surprises are restricted to assistant-style data or also appear in ordinary text.

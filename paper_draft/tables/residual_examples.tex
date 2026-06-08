@@ -1,0 +1,19 @@
+\begin{table}[t]
+\centering
+\caption{Representative rich-predictor residual failures. Residuals are actual minus predicted $\log(1+\klinstbase)$. Positive residuals indicate underprediction; negative residuals indicate overprediction.}
+\label{tab:residual_examples}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llrrrrllp{4.2cm}@{}}
+\toprule
+\textbf{Source} & \textbf{Token} & \textbf{KL} & \textbf{Pred.} & \textbf{Residual} & \textbf{Agree} & \textbf{Base top-1} & \textbf{Inst. top-1} & \textbf{Interpretation} \\
+\midrule
+\wikitext & \texttt{is} & 4.282 & 0.0097 & 1.655 & no & \texttt{quote} & \texttt{quote} & Top-1 text agrees, but probability mass beyond the argmax differs strongly. \\
+\wikitext & \texttt{other} & 4.283 & 0.0281 & 1.636 & no & \texttt{two} & \texttt{pool} & Natural narrative continuation shift not captured by source/position/token features. \\
+\wikitext & \texttt{cares} & 4.249 & 0.0334 & 1.625 & no & \texttt{calls} & \texttt{approaches} & The instruct model favors a different narrative continuation mode. \\
+\arena & \texttt{Assistant} & 0.146 & 0.508 & -0.372 & yes & \texttt{Assistant} & \texttt{Assistant} & Literal chat markup makes the base model agree more than expected. \\
+\beavertails & \texttt{Assistant} & 0.085 & 0.405 & -0.323 & yes & \texttt{Assistant} & \texttt{Assistant} & A usually high-divergence boundary collapses when the marker is explicit. \\
+\arena & \texttt{Transform} & 0.037 & 0.297 & -0.260 & yes & \texttt{Transformers} & \texttt{Transformers} & Response start looked risky to the predictor, but both models agree. \\
+\bottomrule
+\end{tabular}
+}
+\end{table}

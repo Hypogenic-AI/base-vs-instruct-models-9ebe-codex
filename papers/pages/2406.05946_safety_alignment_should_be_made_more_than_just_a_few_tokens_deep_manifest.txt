@@ -1,0 +1,10 @@
+PDF: papers/2406.05946_safety_alignment_should_be_made_more_than_just_a_few_tokens_deep.pdf
+Total pages: 25
+Pages per chunk: 5
+
+Chunks:
+  2406.05946_safety_alignment_should_be_made_more_than_just_a_few_tokens_deep_chunk_001.pdf: pages 1-5
+  2406.05946_safety_alignment_should_be_made_more_than_just_a_few_tokens_deep_chunk_002.pdf: pages 6-10
+  2406.05946_safety_alignment_should_be_made_more_than_just_a_few_tokens_deep_chunk_003.pdf: pages 11-15
+  2406.05946_safety_alignment_should_be_made_more_than_just_a_few_tokens_deep_chunk_004.pdf: pages 16-20
+  2406.05946_safety_alignment_should_be_made_more_than_just_a_few_tokens_deep_chunk_005.pdf: pages 21-25

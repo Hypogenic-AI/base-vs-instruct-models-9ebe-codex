@@ -1,0 +1,13 @@
+\begin{table}[t]
+\centering
+\caption{Strongest source-level Mann-Whitney comparisons on per-example mean KL after Holm correction. Cliff's delta is for the first source relative to the second.}
+\label{tab:source_tests}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Comparison} & \textbf{Mean A} & \textbf{Mean B} & \textbf{Holm $p$} & \textbf{Cliff's $\delta$} \\
+\midrule
+\alpaca vs. \justeval & 0.0898 & 0.1131 & \textbf{0.000087} & -0.471 \\
+\alpaca vs. \beavertails & 0.0898 & 0.1230 & 0.00710 & -0.356 \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,16 @@
+\begin{table}[t]
+\centering
+\caption{Generation-start divergence by source. Boundary positions are substantially more divergent than average continuations, especially for \beavertails. The largest value in each metric is bolded.}
+\label{tab:generation_start}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Source} & \textbf{Mean KL} & \textbf{Median KL} & \textbf{P90 KL} \\
+\midrule
+\beavertails & \textbf{0.802} & \textbf{0.504} & \textbf{2.085} \\
+\arena & 0.444 & 0.414 & 0.846 \\
+\alpaca & 0.355 & 0.296 & 0.627 \\
+\justeval & 0.352 & 0.272 & 0.688 \\
+\wikitext & 0.159 & 0.095 & 0.262 \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,764 @@
+You are an academic paper writer. Generate a complete NEURIPS style paper
+based on the experiment results provided.
+
+════════════════════════════════════════════════════════════════════════════════
+                         IMPORTANT: BEFORE YOU START
+════════════════════════════════════════════════════════════════════════════════
+
+Before writing any content, you MUST complete these steps:
+
+1. READ THE SKILL: Review the paper-writer skill at .codex/skills/paper-writer/SKILL.md
+2. READ THE STYLE GUIDE: Study templates/paper_writing/lab_style_guide.md carefully
+3. REVIEW EXAMPLES: Browse paper_examples/ for formatting and language patterns:
+   - Look at sections/1.introduction.tex for language style
+   - Look at tables/*.tex for table formatting
+   - Look at commands/*.tex for macro usage
+4. VERIFY COMMAND TEMPLATES: Command templates (math.tex, general.tex, macros.tex) are pre-copied to paper_draft/commands/
+
+CRITICAL: Reference example papers for FORMATTING and LANGUAGE STYLE only.
+Do NOT copy content, phrasing, or narrative structure from the example papers.
+The examples are in a different research domain - focus only on presentation style.
+
+════════════════════════════════════════════════════════════════════════════════
+                            EXPERIMENT REPORT
+════════════════════════════════════════════════════════════════════════════════
+
+# What's Surprisingly Different Between Base and Instruct Models?
+
+## 1. Executive Summary
+
+We tested whether token-by-token divergence between a base model and its instruction-tuned counterpart can be predicted, and whether the predictor's failures reveal interesting model differences. Using real logits from `Qwen/Qwen2.5-1.5B` and `Qwen/Qwen2.5-1.5B-Instruct`, we computed `KL(p_instruct || p_base)` over 24,049 teacher-forced token positions from Alpaca, JUST-EVAL-INSTRUCT, BeaverTails, Chatbot Arena, and WikiText-2.
+
+The central result supports the hypothesis. A richer KL predictor substantially outperformed a mean baseline and a position/source baseline, but its largest residual misses were informative: high positive misses concentrated in unexpected WikiText narrative spans, while high negative misses often occurred at explicit `Assistant:` boundaries where a simple model expected divergence but both models agreed.
+
+Practically, residual analysis looks useful as an alignment-auditing triage tool. It recovered known shift zones such as generation starts, assistant markers, refusal-style tokens, and code/math, but also surfaced an unexpected natural-text outlier where the instruct model's full distribution diverged sharply from the base model even outside an instruction setting.
+
+## 2. Research Question & Hypothesis
+
+**Research question:** Where do a real base model and its instruction-tuned counterpart differ token by token, and do failures of a learned divergence predictor reveal surprising categories of difference?
+
+**Hypothesis:** If per-token KL divergence is predictable from ordinary features such as source, position, token class, and base-model uncertainty, then places where the predictor is wrong should be enriched for interesting base-vs-instruct differences rather than random noise.
+
+This matters because prior work shows that instruction tuning often shifts response openings, discourse markers, safety/refusal phrases, and formatting tokens. The gap tested here is residual discovery: after learning those obvious regularities, what remains surprising?
+
+## 3. Literature Review Summary
+
+The gathered review identified several directly relevant threads:
+
+| Area | Relevant resource | Takeaway for this experiment |
+|---|---|---|
+| Base vs aligned token shifts | Lin et al., "The Unlocking Spell on Base LLMs" | Alignment often preserves top choices at many positions but shifts style and safety tokens. |
+| Instruction tuning limitations | Ghosh et al., "A Closer Look at the Limitations of Instruction Tuning" | Shifted tokens can be style, response-initiation artifacts, or instruction-data borrowing. |
+| Prompt alignment controls | Zhao et al., "Is In-Context Learning Sufficient for Instruction Following?" | Prompt-only alignment can mimic some tuned behavior, motivating future URIAL controls. |
+| Safety alignment depth | Qi et al., "Safety Alignment Should Be Made More Than Just a Few Tokens Deep" | Per-token KL can reveal shallow early-token refusal behavior. |
+| Token-level objectives | Token-level DPO | Per-token KL is a meaningful unit of analysis for preference/alignment methods. |
+| Mechanistic follow-up | Refusal-direction and crosscoder work | Logit residuals should be treated as discovery targets, not final mechanistic proof. |
+
+## 4. Methodology
+
+### Models
+
+- Base: `Qwen/Qwen2.5-1.5B`
+- Instruct: `Qwen/Qwen2.5-1.5B-Instruct`
+- Tokenizer: Qwen instruct tokenizer, shared vocabulary size 151,936
+- Precision: bfloat16 model forward pass, float32 divergence computation
+- Device: `cuda:0`
+
+This pair was selected because it is a real open-weight same-family base/instruct pair with a shared tokenizer, avoiding tokenizer-family confounds.
+
+### Datasets
+
+Local pre-gathered datasets were used:
+
+| Source | Examples | Token rows | Role |
+|---|---:|---:|---|
+| Alpaca 52k | 60 | 5,119 | Instruction-output SFT traces |
+| JUST-EVAL-INSTRUCT | 60 | 1,422 | Prompt-only instruction boundary traces |
+| BeaverTails 30k | 60 | 4,972 | Safety/refusal-related traces |
+| Chatbot Arena mirror | 60 | 7,329 | Real chat prompt-response traces |
+| WikiText-2 Raw | 59 | 5,207 | Natural-text baseline |
+
+The final run used 299 encoded examples and 24,049 token positions. Traces were capped at 224 tokens.
+
+### Token-Level Scoring
+
+For each context position, both models were evaluated on the identical teacher-forced prefix. The primary target was:
+
+```text
+KL(p_instruct(. | context) || p_base(. | context))
+```
+
+We also saved reverse KL, Jensen-Shannon divergence, base entropy, base top probability, base margin, observed-token base logprob/rank, top-1 agreement, decoded base top-1 token, and decoded instruct top-1 token.
+
+### Predictors
+
+The regression target was `log1p(forward_KL)`.
+
+| Predictor | Features |
+|---|---|
+| Mean baseline | Training mean only |
+| Position/source baseline | Source, segment, context position, normalized position, response-token index, generation-start flag |
+| Rich predictor | Position/source features plus token class, frequent token identity, safety label, base entropy, base top probability, base margin, observed-token logprob/rank, token surface flags |
+
+Models used scikit-learn `HistGradientBoostingRegressor`, with train/test split grouped by example id to prevent token rows from the same trace appearing in both train and test.
+
+### Statistical Analysis
+
+- Example-grouped held-out evaluation: 224 train examples, 75 test examples.
+- Bootstrap confidence intervals: 500 grouped bootstrap resamples over held-out examples.
+- Source comparisons: Mann-Whitney U tests on per-example mean KL with Holm correction.
+- Effect size: Cliff's delta for source comparisons.
+
+## 5. Results
+
+### Source-Level Divergence
+
+| Source | Mean KL | Median KL | P90 KL | P99 KL | Top-1 Disagree Rate |
+|---|---:|---:|---:|---:|---:|
+| JUST-EVAL | 0.109 | 0.063 | 0.271 | 0.585 | 0.187 |
+| BeaverTails | 0.104 | 0.043 | 0.208 | 1.237 | 0.150 |
+| WikiText | 0.096 | 0.042 | 0.184 | 1.145 | 0.131 |
+| Arena | 0.084 | 0.035 | 0.176 | 1.260 | 0.131 |
+| Alpaca | 0.071 | 0.031 | 0.172 | 0.559 | 0.128 |
+
+Prompt and boundary positions were consistently more divergent than ordinary response continuations. Generation-start mean KL was especially high in BeaverTails:
+
+| Source | Generation-start mean KL | Median KL | P90 KL |
+|---|---:|---:|---:|
+| BeaverTails | 0.802 | 0.504 | 2.085 |
+| Arena | 0.444 | 0.414 | 0.846 |
+| Alpaca | 0.355 | 0.296 | 0.627 |
+| JUST-EVAL | 0.352 | 0.272 | 0.688 |
+| WikiText | 0.159 | 0.095 | 0.262 |
+
+Figures:
+
+![KL by source](figures/kl_by_source.png)
+
+![KL position trend](figures/kl_position_trend.png)
+
+### Predictor Performance
+
+| Model | MAE | RMSE | R2 | Spearman r |
+|---|---:|---:|---:|---:|
+| Mean baseline | 0.0756 | 0.1471 | -0.0007 | n/a |
+| Position/source baseline | 0.0601 | 0.1256 | 0.2710 | 0.414 |
+| Rich predictor | 0.0460 | 0.1183 | 0.3533 | 0.795 |
+
+The rich predictor improved held-out MAE by 0.0142 versus the position/source baseline. The grouped bootstrap 95% CI for `rich - position_source` MAE was `[-0.0163, -0.0118]`, so the improvement was stable across held-out-example resampling.
+
+![Predictor scatter](figures/predictor_scatter.png)
+
+### Source-Level Statistical Tests
+
+After Holm correction on per-example mean KL, the strongest source differences were:
+
+| Comparison | Mean A | Mean B | Holm p | Cliff's delta |
+|---|---:|---:|---:|---:|
+| Alpaca vs JUST-EVAL | 0.0898 | 0.1131 | 0.000087 | -0.471 |
+| Alpaca vs BeaverTails | 0.0898 | 0.1230 | 0.00710 | -0.356 |
+
+Most other source comparisons were not significant after correction, including Arena vs WikiText and BeaverTails vs WikiText at the example-mean level.
+
+## 6. Residual Analysis: Where the Predictor Was Wrong
+
+The residual target was:
+
+```text
+actual log1p(KL) - predicted log1p(KL)
+```
+
+The rich predictor's median absolute residual was 0.0202. The 98th percentile absolute residual threshold was 0.2961.
+
+### Enrichment Among High-Residual Tokens
+
+| Feature | Value | High-residual enrichment |
+|---|---|---:|
+| Segment | generation_start | 5.17x |
+| Token class | assistant_marker | 4.78x |
+| Token class | refusal_style | 4.54x |
+| Token class | code_math | 3.49x |
+| Source | WikiText | 3.13x |
+| Token class | capitalized | 1.90x |
+
+![Residual enrichment](figures/residual_token_class_enrichment.png)
+
+### Positive Residuals: Actual KL Much Higher Than Predicted
+
+The largest positive residuals were unexpectedly dominated by a WikiText narrative example. In the top 150 absolute residuals, 84 were WikiText rows, and 61 came from one WikiText example (`wikitext:4314`). This is not just "instruction boilerplate"; it is a natural-language passage where the instruct model and base model sharply diverged in the full next-token distribution.
+
+Representative high positive misses:
+
+| Source | Token | KL | Predicted log1p(KL) | Residual | Base top-1 | Instruct top-1 | Interpretation |
+|---|---:|---:|---:|---:|---|---|---|
+| WikiText | `is` | 4.282 | 0.0097 | 1.655 | `"` | `"` | Top-1 agrees, but full distributions diverge strongly. |
+| WikiText | `other` | 4.283 | 0.0281 | 1.636 | `two` | `pool` | Natural narrative continuation shifts are not captured by style/position features. |
+| WikiText | `cares` | 4.249 | 0.0334 | 1.625 | `calls` | `approaches` | Instruct model appears to favor different narrative continuation modes. |
+| Arena | `They` | 2.336 | 0.0345 | 1.170 | `<|endoftext|>` | `They` | Instruct model remains in assistant-continuation mode where base is ready to stop. |
+
+The top-1 agreement case is especially important: full-distribution KL can be large even when the argmax token is unchanged. Residual analysis therefore catches differences that top-token agreement plots would miss.
+
+### Negative Residuals: Predictor Expected More KL Than Actually Occurred
+
+Large negative residuals often appeared around explicit `Assistant:` markers. The predictor learned that assistant markers and generation starts are often high-divergence zones, but in many held-out contexts both models simply predicted the marker or response opening similarly.
+
+Representative negative misses:
+
+| Source | Token | KL | Predicted log1p(KL) | Residual | Base top-1 | Instruct top-1 | Interpretation |
+|---|---:|---:|---:|---:|---|---|---|
+| Arena prompt | `Assistant` | 0.146 | 0.508 | -0.372 | `Assistant` | `Assistant` | Explicit chat markup makes the base model agree with the instruct model. |
+| BeaverTails prompt | `Assistant` | 0.085 | 0.405 | -0.323 | `Assistant` | `Assistant` | A known high-divergence category can collapse when the boundary is literal. |
+| Arena response | `Transform` | 0.037 | 0.297 | -0.260 | `Transformers` | `Transformers` | Response start looked risky to the predictor, but both models agreed. |
+
+This is useful: it suggests that "assistant marker" is not a uniformly high-divergence feature. The surrounding context and whether the marker is already explicit matter.
+
+## 7. Interpretation
+
+The experiment supports the submitter's idea. A learned predictor can explain a meaningful amount of token-level KL, but its misses are scientifically useful rather than arbitrary.
+
+Three findings stand out:
+
+1. **Boundary effects are real but predictable.** Generation starts and prompt/response boundaries have high KL, especially in BeaverTails, matching shallow-alignment and instruction-tuning literature.
+2. **Residuals reveal non-obvious natural-text divergence.** The strongest positive errors were not refusal phrases or assistant style tokens; they were WikiText narrative continuations. This suggests instruction tuning may alter narrative continuation distributions more than expected from surface features.
+3. **Top-1 agreement is insufficient.** Some high-KL residuals had the same base and instruct top-1 token, meaning the difference lives in probability mass beyond the argmax.
+
+The most surprising result is the WikiText outlier. It may represent a genuine instruct-vs-base shift in continuation priors, a tokenizer/context artifact, or an outlier passage where the base model is very confident in a different latent continuation mode. Either way, it is exactly the kind of target residual analysis is meant to surface for follow-up.
+
+## 8. Limitations
+
+- Only one model pair was tested, and it is a 1.5B model. Results may differ for larger Qwen, Gemma, Llama, or Mistral pairs.
+- The sample size was intentionally medium-scale: 60 examples per source and max 224 tokens. This is enough to test the workflow, not enough for a definitive taxonomy.
+- The predictor uses observed-token surface features and base-model statistics. That is appropriate for teacher-forced residual discovery, but it is not a deployment setting where future sampled tokens are unknown.
+- No URIAL/base-plus-prompt control was run. That would help separate prompt-induced style from weight-level post-training changes.
+- Residual categories are heuristic. They are discovery aids, not final labels.
+- The top positive residuals were dominated by one WikiText example. This is a finding, but it also warns that outlier examples can dominate qualitative conclusions.
+- Safety examples were sanitized in residual tables to avoid reproducing harmful instructions, so qualitative analysis of unsafe contexts is intentionally less detailed.
+
+## 9. Reproducibility and Validation
+
+Environment:
+
+- Python: 3.12.8
+- PyTorch: 2.12.0+cu130
+- Transformers: 5.10.2
+- scikit-learn: 1.9.0
+- CUDA: 13.0
+- GPUs detected: 4 x NVIDIA RTX A6000, 48,541 MiB each
+- GPU used: `cuda:0`
+- Batch size: 8, chosen conservatively because full-vocabulary KL requires large logit tensors for two models.
+- Runtime: 66.4 seconds for the final run after model cache availability.
+
+The full experiment was run twice with the same seed and config. The row count, source stats, predictor metrics, bootstrap summaries, and residual summaries matched exactly across runs. The first summary is retained at `results/summary_first_run.json`; the final summary is at `results/summary.json`.
+
+Reproduction command:
+
+```bash
+source .venv/bin/activate
+python src/run_divergence_experiment.py \
+  --examples-per-source 60 \
+  --max-length 224 \
+  --batch-size 8 \
+  --bootstrap-iterations 500
+```
+
+Primary outputs:
+
+- `results/token_kl_metrics.csv.gz`: token-level KL and auxiliary metrics
+- `results/heldout_predictions.csv`: held-out predictor predictions and residuals
+- `results/top_abs_residuals.csv`: largest rich-predictor misses
+- `results/residual_enrichment.csv`: high-residual enrichment table
+- `results/source_stats.csv`: source-level KL summaries
+- `results/source_pair_tests.csv`: Mann-Whitney tests with Holm correction
+- `figures/*.png`: visual summaries
+
+## 10. Conclusions & Next Steps
+
+The answer to the research question is yes, with caveats. Token-level KL between a base and instruct model is partly predictable, and the places where the predictor fails are informative. The method recovered known divergence zones and surfaced a surprising natural-text residual cluster that would merit closer follow-up.
+
+Recommended next steps:
+
+1. Repeat on larger same-family pairs such as Qwen 7B, Gemma base vs IT, and Llama base vs instruct/chat.
+2. Add a base+URIAL prompt control to distinguish prompt-format effects from weight-level instruction tuning.
+3. Expand WikiText and natural-text sampling to test whether the narrative outlier is common or isolated.
+4. Inspect high positive residuals with top-k probability tables, not only top-1 tokens.
+5. Use activation-level tools such as TransformerLens or crosscoders on the strongest residual spans after confirming they replicate.
+
+## References and Resources
+
+- `literature_review.md`
+- `resources.md`
+- `papers/2312.01552_the_unlocking_spell_on_base_llms_rethinking_alignment_via_in_context_learn.pdf`
+- `papers/2402.05119_a_closer_look_at_the_limitations_of_instruction_tuning.pdf`
+- `papers/2405.19874_is_in_context_learning_sufficient_for_instruction_following_in_llms.pdf`
+- `papers/2406.05946_safety_alignment_should_be_made_more_than_just_a_few_tokens_deep.pdf`
+- `papers/2404.11999_token_level_direct_preference_optimization.pdf`
+- `papers/2406.11717_refusal_in_language_models_is_mediated_by_a_single_direction.pdf`
+- Hugging Face datasets documented in `datasets/README.md`
+- Qwen model checkpoints: `Qwen/Qwen2.5-1.5B`, `Qwen/Qwen2.5-1.5B-Instruct`
+
+
+════════════════════════════════════════════════════════════════════════════════
+                            RESEARCH PLAN
+════════════════════════════════════════════════════════════════════════════════
+
+# Research Plan: Token-Level Base vs Instruct Divergence
+
+## Motivation & Novelty Assessment
+
+### Why This Research Matters
+
+Instruction tuning changes not only answer quality but the full next-token distribution of a model. If we can predict where a base and instruct model should diverge, then the failures of that predictor become a compact way to find model changes that are not just ordinary assistant style, refusal boilerplate, or position effects.
+
+This matters for alignment auditing, model diffing, and dataset diagnosis: researchers can focus human inspection and mechanistic follow-up on a small set of surprising token locations instead of scanning millions of logits.
+
+### Gap in Existing Work
+
+The gathered literature shows strong aggregate evidence that instruction tuning concentrates shift in response starts, safety phrases, formatting, and discourse markers. However, prior work mostly reports average token-shift plots or known categories. It rarely trains a predictor of token-level divergence and then studies residual failures as the main discovery signal.
+
+### Our Novel Contribution
+
+This experiment treats per-token KL divergence as a supervised target. We compute real token distributions from a same-tokenizer base/instruct pair, train a lightweight predictor using base-only and surface features, and manually/quantitatively analyze positions where actual KL is much higher or lower than predicted.
+
+### Experiment Justification
+
+- Experiment 1: Compute teacher-forced per-position `KL(p_instruct || p_base)` on multiple corpora. This establishes the empirical divergence landscape and avoids sampling confounds.
+- Experiment 2: Train a residual predictor from source, position, token class, and base-model uncertainty features. This tests whether predictable style/position effects explain most divergence.
+- Experiment 3: Inspect the largest residual misses. This directly tests the submitter's hypothesis that predictor failures identify interesting differences.
+- Experiment 4: Compare residual composition across instruction, safety/chat, and natural-text sources. This checks whether surprises are domain-specific or just generic language-model uncertainty.
+
+## Research Question
+
+Where do a real base model and its instruction-tuned counterpart differ token by token, and do failures of a learned KL-divergence predictor reveal interesting or surprising categories of difference?
+
+## Background and Motivation
+
+The literature review highlights URIAL/Unlocking Spell, limitations of instruction tuning, shallow safety alignment, token-level DPO, and refusal-direction work. Together these papers suggest that many base-vs-instruct differences are sparse and interpretable at the token level, especially around response openings, refusal phrases, discourse markers, and formatting.
+
+The gap is residual discovery. Instead of only confirming known high-KL categories, this project asks what remains unexplained after a model learns the obvious regularities.
+
+## Hypothesis Decomposition
+
+- H1: Token-level KL between base and instruct models is predictable above simple baselines from source, position, segment, token class, and base-model uncertainty.
+- H2: The largest positive residuals are enriched for semantically meaningful shifts, such as safety/refusal context, assistant persona markers, formatting boundaries, code/math, or factual/entity tokens.
+- H3: The largest negative residuals correspond to places where a simple predictor expects instruction-tuning shift but the models are actually distributionally similar.
+- H4: Natural text should have lower and less structured divergence than instruction/safety/chat corpora.
+
+Independent variables: dataset/source, prompt vs response segment, token position, token/surface class, base-model entropy/logprob/rank, and safety labels where available.
+
+Dependent variables: forward KL, reverse KL, Jensen-Shannon divergence, top-1 agreement, predictor error, and residual category enrichment.
+
+## Proposed Methodology
+
+### Approach
+
+Use `Qwen/Qwen2.5-1.5B` and `Qwen/Qwen2.5-1.5B-Instruct` because they are real open-weight same-family models with a shared tokenizer and are small enough to run full-vocabulary token KL on the available A6000 GPU. Teacher-forced scoring keeps both models on identical contexts.
+
+### Experimental Steps
+
+1. Load local dataset samples from Alpaca, JUST-EVAL-INSTRUCT, BeaverTails, Chatbot Arena, and WikiText-2.
+2. Convert each example into a common text trace with a prompt-like prefix and, where available, a response segment.
+3. Tokenize each trace with the shared Qwen tokenizer and cap traces at 256 tokens for a broad but feasible first pass.
+4. Run both models in eval mode with mixed precision on GPU and compute per-position forward KL, reverse KL, JS divergence, base entropy, observed-token base logprob, observed-token rank, and top-1 agreement.
+5. Split by example id to avoid token leakage between train and test.
+6. Train a simple positional/source baseline and a richer divergence predictor on `log1p(KL)`.
+7. Evaluate MAE, RMSE, R2, Spearman correlation, and residual distributions.
+8. Analyze top absolute, positive, and negative residuals using token/context snippets and heuristic token categories.
+
+### Baselines
+
+- Mean-only baseline: predicts the training mean `log1p(KL)`.
+- Position/source baseline: predicts from source, segment, and token position only.
+- Rich predictor: adds token surface class, base uncertainty, observed-token rank/logprob, and local context features.
+
+### Evaluation Metrics
+
+- `KL(p_instruct || p_base)`: primary divergence target.
+- Reverse KL and JS divergence: stability/symmetry checks.
+- MAE/RMSE on `log1p(KL)`: regression accuracy under a skewed target.
+- R2 and Spearman correlation: explained variance and rank ordering.
+- Top residual enrichment: whether high-error tokens are overrepresented in specific categories.
+
+### Statistical Analysis Plan
+
+Use bootstrap confidence intervals over held-out examples for model MAE and paired bootstrap differences between predictors. Use Mann-Whitney U tests for source-level KL differences when distributions are non-normal, with Holm correction for multiple comparisons. Report effect sizes using Cliff's delta for source comparisons and paired mean error differences for predictor comparisons.
+
+## Expected Outcomes
+
+Support for the hypothesis would look like: the rich predictor improves over baselines, but its largest residuals are not random; they cluster around interpretable categories such as safety refusals, assistant identity, formatting boundaries, code/math, and factual/entity completions. Refutation would look like residuals dominated by noise, tokenization artifacts, or only the same categories already captured by source/position effects.
+
+## Timeline and Milestones
+
+- Setup and validation: 10-20 minutes.
+- Data loading and scoring pipeline: 45-75 minutes.
+- KL extraction on a medium sample: 30-90 minutes depending on model download and GPU speed.
+- Predictor training and statistical analysis: 20-40 minutes.
+- Report, README, and reproducibility validation: 20-30 minutes.
+
+## Potential Challenges
+
+- Model download or CUDA incompatibility: fall back to the smaller `Qwen/Qwen2.5-0.5B` pair while preserving the method.
+- Long scoring time: reduce examples per source or max sequence length, and document the computational scale.
+- KL numerical instability: compute in float32 from model logits and use JS divergence as a bounded check.
+- Residual interpretation bias: report both quantitative category enrichment and representative snippets, including negative results.
+- Unsafe safety prompts: avoid reproducing harmful instructions in detail; use redacted snippets where needed.
+
+## Success Criteria
+
+- Real base and instruct model logits are used; no simulated model behavior.
+- Per-token KL and related metrics are saved in `results/`.
+- At least one learned predictor is trained and evaluated against baselines.
+- Residual outliers are analyzed quantitatively and qualitatively.
+- `REPORT.md`, `README.md`, code, figures, and reproducibility instructions document actual results.
+
+
+════════════════════════════════════════════════════════════════════════════════
+                          LITERATURE REVIEW
+════════════════════════════════════════════════════════════════════════════════
+
+# Literature Review: Base vs Instruct Model Divergence
+
+## Review Scope
+
+### Research Question
+
+Where do base and instruction-tuned language models differ token by token, and can failures of a KL-divergence predictor reveal surprising behavioral or mechanistic differences?
+
+### Inclusion Criteria
+
+- Papers comparing base, chat, instruction-tuned, safety-aligned, or reasoning-tuned variants.
+- Papers using token-level distribution shift, KL divergence, logit differences, or per-position preference/safety signals.
+- Papers with datasets, code, or methods that can be adapted for divergence-prediction experiments.
+- Foundational instruction tuning/RLHF papers needed to define baselines.
+
+### Exclusion Criteria
+
+- Papers focused only on unrelated downstream benchmark gains without analysis of distributional or behavioral shifts.
+- Closed-only methods without enough methodological detail to reproduce.
+- Very large dataset papers unless they provide useful prompt corpora or evaluation protocols.
+
+### Search Log
+
+| Date | Query / Source | Results | Notes |
+|---|---|---:|---|
+| 2026-06-08 | paper-finder: "base versus instruction tuned language models token-level KL divergence behavioral differences" | 142 | Downloaded all 17 relevance >= 2 papers and selected 9 foundational relevance-1 papers. |
+| 2026-06-08 | Manual web/arXiv/Semantic Scholar follow-up | 26 PDFs | Filled PDF links, code repositories, and dataset sources. |
+
+## Research Area Overview
+
+The most relevant literature supports a strong working premise: instruction tuning often changes a model unevenly across token positions. Several studies find that base and instruct/chat variants agree over many ordinary content tokens but diverge at response starts, discourse markers, safety/refusal phrases, hedges, formatting, and other style or policy tokens. This makes per-token KL a plausible measurement target, but also means a divergence predictor must separate "expected style shift" from genuinely surprising changes in knowledge, refusal, reasoning, or representation.
+
+## Key Papers
+
+### The Unlocking Spell on Base LLMs
+
+Lin et al. compare base and aligned token distributions for model pairs such as Llama-2 vs Llama-2-chat and argue that alignment tuning often leaves top token choices unchanged at most positions. The largest shifts concentrate in stylistic tokens such as discourse markers and safety disclaimers. They introduce URIAL, a tuning-free in-context alignment prompt using a system prompt and a few restyled examples, and JUST-EVAL-INSTRUCT for multi-aspect evaluation. This is the closest prior work to the proposed hypothesis and should be treated as the primary baseline.
+
+### A Closer Look at the Limitations of Instruction Tuning
+
+Ghosh et al. analyze instruction tuning across LoRA and full-parameter fine-tuning. Their key finding is that LoRA mainly learns response initiation and style tokens, while full fine-tuning can degrade knowledge and increase hallucination by borrowing tokens from instruction data. They explicitly inspect shifted token positions and find many shifted/marginal tokens trace back to the tuning dataset. This motivates recording whether high-KL positions are generic style tokens, dataset artifacts, or content-bearing tokens.
+
+### Is In-Context Learning Sufficient for Instruction Following?
+
+Zhao et al. test URIAL and many-shot ICL against instruction fine-tuning on MT-Bench and AlpacaEval 2.0. URIAL helps, but usually does not fully match instruction tuning for stronger base models. Their appendix reports that IFT can move a model farther from the base distribution than ICL, even with very small fine-tuning sets. This suggests a useful control: compare base, instruct, and base+URIAL. If divergence predictor errors vanish under URIAL, the surprising shift may be mostly prompt/style; if not, it may reflect weight-level post-training changes.
+
+### Safety Alignment Should Be Made More Than Just a Few Tokens Deep
+
+Qi et al. show safety alignment can take a shallow shortcut where the aligned model's distribution differs mostly in the first few output tokens. They compute per-token KL between fine-tuned and initially aligned models and use positional plots to explain jailbreak susceptibility. This is directly relevant for safety subsets: refusal prompts should produce high early KL, but surprising predictor failures may appear where refusal persists or collapses later in the sequence.
+
+### Crosscoders for Chat-Tuning
+
+Minder et al. study model diffing between Gemma 2 base and chat models. They warn that L1 crosscoders can falsely identify shared concepts as chat-only because of sparsity artifacts, and they recommend BatchTopK plus latent scaling. Although this is activation-level rather than token-level, it provides a caution: naive "difference" detectors can hallucinate model-specific features. If the KL predictor finds a surprising token region, activation-level follow-up with crosscoders or patching may help validate it.
+
+### Related Foundations
+
+InstructGPT, FLAN, and T0 define standard SFT/RLHF and instruction-tuning baselines. Token-level DPO provides a preference-learning objective with explicit per-token KL constraints. Proxy tuning and Nudging show that tuned-vs-untuned logit differences can be applied at inference time, often affecting only a sparse set of tokens. Refusal-direction work gives a mechanistic baseline for safety behavior shifts.
+
+## Common Methodologies
+
+- Token distribution comparison: run base and instruct variants on the same context, compare top-k agreement, token rank changes, KL, JS divergence, or log-prob deltas.
+- Position-wise analysis: average divergence by generated token index, with special attention to first response tokens and safety prefixes.
+- Teacher-forced traces: compute logits along reference completions from Alpaca, BeaverTails, or chat transcripts to avoid sampling confounds.
+- Generated-trace analysis: decode from one model and score the same sequence under both models to inspect actual behavioral divergence.
+- Prompt controls: compare raw base, base+URIAL/system prompt, and instruct model to isolate prompt-induced style from weight-induced post-training.
+- Mechanistic follow-up: use refusal directions, activation patching, or crosscoders for high-surprise spans found by the KL predictor.
+
+## Baselines and Metrics
+
+Recommended baselines:
+
+- Constant positional baseline: average KL by token index and dataset type.
+- Token-frequency/style baseline: predict high divergence for common assistant openers, refusal phrases, bullets, hedges, and formatting tokens.
+- Shallow model baseline: n-gram or small transformer predictor using local context only.
+- Model-family control: compare same-family base/instruct pairs first, such as Gemma base vs Gemma-it or Llama base vs chat.
+- Prompt control: base vs base+URIAL, and base+URIAL vs instruct.
+
+Recommended metrics:
+
+- Per-token KL: `KL(p_instruct || p_base)` and optionally reverse KL.
+- JS divergence or symmetric KL for stability.
+- Top-1/top-k agreement and rank displacement of the observed token.
+- Calibration of the divergence predictor: MSE/MAE plus residual outlier analysis.
+- Residual enrichment: whether high-error tokens are overrepresented in refusal, style, factual entities, code/math, or prompt-boundary positions.
+
+## Datasets in the Literature
+
+JUST-EVAL-INSTRUCT and MT-Bench are used for instruction-following evaluation and are directly aligned with the URIAL papers. Alpaca is a canonical SFT dataset. BeaverTails provides safety/refusal contexts that should reveal shallow alignment effects. Chatbot Arena conversations provide realistic chat prompts and comparisons. WikiText-2 gives a natural-text baseline where instruction style should be less dominant.
+
+## Gaps and Opportunities
+
+- Existing papers often show aggregate token-shift plots but do not train a predictor and analyze its residual failures.
+- Prior work focuses on known shift categories, especially style and refusal. A residual-based approach may surface less obvious categories such as factual entities, tool-use conventions, code formatting, uncertainty phrases, or hidden prompt-boundary artifacts.
+- Token-level KL can be dominated by high-probability modes. Tail-aware or top-k-separated divergences may reveal differences that vanilla KL hides.
+- Activation-level validation is still fragile; crosscoder artifacts show that "model-specific" findings require controls.
+
+## Recommendations for Our Experiment
+
+Use a staged design:
+
+1. Compute teacher-forced per-token divergence on Alpaca, JUST-EVAL-INSTRUCT generated responses, BeaverTails, Chatbot Arena, and WikiText-2.
+2. Train a lightweight divergence predictor using token identity, position, local context embedding, prompt/completion segment, and dataset/source features.
+3. Analyze largest positive and negative residuals by token class and context type.
+4. Compare same-family base/instruct pairs first to avoid tokenizer/model-family confounds.
+5. Add base+URIAL as a control. Residuals unique to instruct weights are more interesting than residuals reproduced by a prompt.
+6. Validate surprising safety residuals against refusal-direction or shallow-alignment methods, but avoid relying on unsafe datasets unless access and review protocols are in place.
+
+
+════════════════════════════════════════════════════════════════════════════════
+                          PAPER REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+Generate a complete academic paper with the following structure:
+
+1. TITLE
+   - Clear, specific, informative
+   - Should convey main finding or contribution
+
+2. AUTHOR
+   - Use this exact author line in the \author{} block: Ari Holtzman and NeuriCo
+
+3. ABSTRACT (150-250 words)
+   - Problem statement
+   - Approach
+   - Key results
+   - Significance
+
+4. INTRODUCTION
+   - Research problem and motivation
+   - Gap in existing work
+   - Our contribution (be specific)
+   - Paper organization
+
+5. RELATED WORK
+   - Organized by theme/approach
+   - Position our work relative to prior work
+   - Cite papers from literature review
+
+6. METHODOLOGY
+   - Clear description of approach
+   - Experimental setup
+   - Datasets used
+   - Evaluation metrics
+   - Baselines
+
+7. RESULTS
+   - Present results with tables and figures
+   - Statistical analysis
+   - Comparison to baselines
+   - Ablation studies (if applicable)
+
+8. DISCUSSION
+   - Interpretation of results
+   - Limitations
+   - Broader implications
+
+9. CONCLUSION
+   - Summary of contributions
+   - Key findings
+   - Future work
+
+10. REFERENCES
+   - BibTeX format
+   - All cited papers
+
+════════════════════════════════════════════════════════════════════════════════
+                          OUTPUT FORMAT
+════════════════════════════════════════════════════════════════════════════════
+
+Create a MODULAR LaTeX project with the following directory structure:
+
+paper_draft/
+├── main.tex              # Main file that imports all sections
+├── references.bib        # BibTeX references
+├── sections/
+│   ├── abstract.tex      # Abstract content
+│   ├── introduction.tex  # Introduction section
+│   ├── related_work.tex  # Related work section
+│   ├── methodology.tex   # Methodology section
+│   ├── results.tex       # Results section
+│   ├── discussion.tex    # Discussion section
+│   └── conclusion.tex    # Conclusion section
+├── figures/              # Directory for any generated figures
+├── tables/               # Directory for complex standalone tables
+└── appendix/             # Directory for appendix sections (if needed)
+
+INSTRUCTIONS:
+1. First, create the directory structure above (mkdir -p paper_draft/sections paper_draft/figures paper_draft/tables paper_draft/appendix)
+2. Write main.tex using the EXACT preamble for NEURIPS:
+
+   \documentclass{article}
+   \usepackage[final]{neurips_2025}  % NEURIPS style (neurips_2025.sty is in paper_draft/)
+   \usepackage[hidelinks]{hyperref}  % REQUIRED: clickable links
+   \usepackage{booktabs}  % REQUIRED: professional tables
+   \usepackage{graphicx}
+   \usepackage{amsmath,amssymb}
+
+   % Import command files
+   \input{commands/math}
+   \input{commands/general}
+   \input{commands/macros}
+
+   % Use this bibliography style:
+   \bibliographystyle{plainnat}
+
+   \author{Ari Holtzman and NeuriCo}
+
+   - Use \input{sections/...} to include each section
+   - Use \bibliography{references} for references
+3. Write each section file with COMPLETE content (no placeholders)
+4. Each section file should include its \section{} command
+5. Write references.bib with all citations in BibTeX format
+6. After writing all files, compile the paper:
+   cd paper_draft && pdflatex -interaction=nonstopmode main.tex && bibtex main && pdflatex -interaction=nonstopmode main.tex && pdflatex -interaction=nonstopmode main.tex
+
+This modular structure allows humans to easily:
+- Edit individual sections without navigating a large file
+- Track changes per section
+- Reuse sections across different paper versions
+
+════════════════════════════════════════════════════════════════════════════════
+                          QUALITY REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+- Academic tone throughout
+- All claims must be supported by data from the experiment report
+- Proper citations using \cite{} commands
+- Clear figures and tables with proper captions
+- NO placeholder text - every section must have real content
+- The paper MUST compile without errors
+- If compilation fails, debug and fix the LaTeX errors
+
+════════════════════════════════════════════════════════════════════════════════
+                          LAB WRITING STYLE
+════════════════════════════════════════════════════════════════════════════════
+
+Follow these lab-specific conventions to match our paper style:
+
+1. LANGUAGE STYLE:
+   - Use active voice: "We propose", "We examine", "We focus on"
+   - Be direct and confident: "Our main question is...", "We hypothesize that..."
+   - State things clearly and simply - prefer plain language over jargon
+   - Use bold questions as paragraph organizers: {\bf what is X?}
+   - Include specific quantitative claims: "8.97% over baseline"
+   - Avoid fancy wording: "utilize" → "use", "facilitate" → "help"
+
+2. INTRODUCTION STRUCTURE:
+   - Engaging hook (get to the point quickly)
+   - Problem importance
+   - Gap identification
+   - Your approach with method figure reference
+   - Quantitative preview of results
+   - Contribution bullets (3-4 items, action verbs)
+
+3. CONTRIBUTION LISTS:
+   \begin{itemize}[leftmargin=*,itemsep=0pt,topsep=0pt]
+       \item We propose...
+       \item We conduct...
+       \item We complement...
+   \end{itemize}
+
+4. MODULAR COMMANDS STRUCTURE:
+   Command templates are pre-copied to paper_draft/commands/:
+   - math.tex: Math notation macros
+   - general.tex: Formatting macros
+   - macros.tex: Project-specific term definitions (customize this for your paper)
+
+   In main.tex, include:
+   \input{commands/math}
+   \input{commands/general}
+   \input{commands/macros}
+
+5. REFERENCE CONVENTIONS:
+   Use reference macros from math.tex:
+   - \figref{fig:name} for "figure 1" (lowercase, in-sentence)
+   - \Figref{fig:name} for "Figure 1" (capitalized, start of sentence)
+   - \secref{sec:name} for "section 2"
+
+6. TEXT FORMATTING:
+   - Use \para{Header text} for bold paragraph headers
+   - Define method/dataset names with \textsc and \xspace:
+     \newcommand{\methodname}{\textsc{MethodName}\xspace}
+
+7. TABLE FORMATTING:
+   - Use booktabs package (no vertical lines)
+   - Use \resizebox{\textwidth}{!}{...} for wide tables
+   - Use @{} to remove padding at table edges
+   - Use \cmidrule(lr){x-y} for sub-headers
+   - Use \textsc{} for dataset/method names in headers
+   - Bold best results with {\bf ...}
+
+8. FIGURE FORMATTING:
+   - Use 0.32\textwidth for 3-column subfigures
+   - Use 0.95\linewidth for full-width figures
+   - Use \input{figures/legend} for shared legends
+   - Write self-contained captions explaining key observations
+
+9. RESULTS PRESENTATION:
+   - Define \increase and \decrease for colored arrows (green up, red down)
+   - Bold best results in tables
+   - Report confidence intervals when available
+
+10. ALGORITHM STYLING:
+    - Use algpseudocode with [noend]
+    - Use \triangleright for comments
+
+11. HYPERLINKS (REQUIRED):
+    - Always use \usepackage[hidelinks]{hyperref} or with colored links
+    - All citations, section refs, figure refs, table refs must be clickable
+    - This is essential for reader navigation
+
+════════════════════════════════════════════════════════════════════════════════
+                          WORKFLOW: REVIEW AND REFLECT
+════════════════════════════════════════════════════════════════════════════════
+
+Before calling finish, you MUST complete these review steps:
+
+1. REVIEW RESOURCES (at the start):
+   - Read .codex/skills/paper-writer/SKILL.md for detailed guidance
+   - Study templates/paper_writing/lab_style_guide.md for style conventions
+   - Browse paper_examples/ for formatting and language patterns
+
+2. SELF-REFLECTION (before finishing):
+   After writing all sections, review your work against these criteria:
+
+   LANGUAGE CHECK:
+   - [ ] Is the writing clear and jargon-free?
+   - [ ] Are claims specific with quantitative support?
+   - [ ] Is active voice used throughout?
+
+   FORMATTING CHECK:
+   - [ ] Does main.tex include \input{commands/math}, \input{commands/general}, \input{commands/macros}?
+   - [ ] Is hyperref package included for clickable references?
+   - [ ] Do tables use booktabs (no vertical lines)?
+   - [ ] Are best results bolded in tables?
+   - [ ] Are figures/tables properly captioned?
+
+   STRUCTURE CHECK:
+   - [ ] Does introduction follow: hook → importance → gap → approach → preview → contributions?
+   - [ ] Are contribution bullets specific with action verbs?
+   - [ ] Does the paper compile without errors?
+
+3. FIX ISSUES:
+   - Address any issues found in the self-reflection
+   - Re-compile and verify the PDF looks correct
+
+Only after completing this review should you consider the paper finished.

@@ -1,0 +1,45 @@
+{
+  "python": "3.12.8 (main, Dec 19 2024, 14:33:20) [Clang 18.1.8 ]",
+  "torch": "2.12.0+cu130",
+  "cuda_available": true,
+  "cuda_version": "13.0",
+  "gpu_count": 4,
+  "gpus": [
+    {
+      "index": 0,
+      "name": "NVIDIA RTX A6000",
+      "total_memory_mib": 48541
+    },
+    {
+      "index": 1,
+      "name": "NVIDIA RTX A6000",
+      "total_memory_mib": 48541
+    },
+    {
+      "index": 2,
+      "name": "NVIDIA RTX A6000",
+      "total_memory_mib": 48541
+    },
+    {
+      "index": 3,
+      "name": "NVIDIA RTX A6000",
+      "total_memory_mib": 48541
+    }
+  ],
+  "config": {
+    "seed": 42,
+    "base_model": "Qwen/Qwen2.5-1.5B",
+    "instruct_model": "Qwen/Qwen2.5-1.5B-Instruct",
+    "examples_per_source": 60,
+    "max_length": 224,
+    "batch_size": 8,
+    "device": "cuda:0",
+    "output_dir": "results",
+    "figure_dir": "figures",
+    "log_dir": "logs",
+    "top_residual_count": 150,
+    "bootstrap_iterations": 500
+  },
+  "elapsed_seconds": 66.39631652832031,
+  "scored_rows": 24049
+}

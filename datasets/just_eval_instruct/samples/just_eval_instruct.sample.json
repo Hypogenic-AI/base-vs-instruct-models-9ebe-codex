@@ -1,0 +1,83 @@
+[
+  {
+    "id": 0,
+    "instruction": "What are the names of some famous actors that started their careers on Broadway?",
+    "source_id": "alpaca_eval-0",
+    "dataset": "helpful_base",
+    "category": "regular",
+    "task": [
+      "info-seek"
+    ],
+    "topic": [
+      "humanities"
+    ],
+    "difficulty": "N/A",
+    "output": null,
+    "generator": null
+  },
+  {
+    "id": 1,
+    "instruction": "How did US states get their names?",
+    "source_id": "alpaca_eval-1",
+    "dataset": "helpful_base",
+    "category": "regular",
+    "task": [
+      "info-seek"
+    ],
+    "topic": [
+      "humanities"
+    ],
+    "difficulty": "N/A",
+    "output": null,
+    "generator": null
+  },
+  {
+    "id": 2,
+    "instruction": "Hi, my sister and her girlfriends want me to play kickball with them. Can you explain how the game is played, so they don't take advantage of me?",
+    "source_id": "alpaca_eval-2",
+    "dataset": "helpful_base",
+    "category": "regular",
+    "task": [
+      "info-seek",
+      "procedure"
+    ],
+    "topic": [
+      "lifestyle"
+    ],
+    "difficulty": "N/A",
+    "output": null,
+    "generator": null
+  },
+  {
+    "id": 3,
+    "instruction": "What is some cool music from the 1920s?",
+    "source_id": "alpaca_eval-3",
+    "dataset": "helpful_base",
+    "category": "regular",
+    "task": [
+      "info-seek"
+    ],
+    "topic": [
+      "humanities"
+    ],
+    "difficulty": "N/A",
+    "output": null,
+    "generator": null
+  },
+  {
+    "id": 4,
+    "instruction": "How do I wrap a present neatly?",
+    "source_id": "alpaca_eval-4",
+    "dataset": "helpful_base",
+    "category": "regular",
+    "task": [
+      "procedure"
+    ],
+    "topic": [
+      "lifestyle"
+    ],
+    "difficulty": "N/A",
+    "output": null,
+    "generator": null
+  }
+]

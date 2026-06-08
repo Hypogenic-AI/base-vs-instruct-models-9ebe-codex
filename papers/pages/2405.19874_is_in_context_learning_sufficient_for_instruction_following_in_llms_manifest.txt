@@ -1,0 +1,10 @@
+PDF: papers/2405.19874_is_in_context_learning_sufficient_for_instruction_following_in_llms.pdf
+Total pages: 24
+Pages per chunk: 5
+
+Chunks:
+  2405.19874_is_in_context_learning_sufficient_for_instruction_following_in_llms_chunk_001.pdf: pages 1-5
+  2405.19874_is_in_context_learning_sufficient_for_instruction_following_in_llms_chunk_002.pdf: pages 6-10
+  2405.19874_is_in_context_learning_sufficient_for_instruction_following_in_llms_chunk_003.pdf: pages 11-15
+  2405.19874_is_in_context_learning_sufficient_for_instruction_following_in_llms_chunk_004.pdf: pages 16-20
+  2405.19874_is_in_context_learning_sufficient_for_instruction_following_in_llms_chunk_005.pdf: pages 21-24

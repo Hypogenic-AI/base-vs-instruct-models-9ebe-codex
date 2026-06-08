@@ -1,0 +1,20 @@
+\begin{table}[t]
+\centering
+\caption{Datasets used for teacher-forced token scoring. We score 299 encoded examples and 24,049 token positions after tokenization and filtering.}
+\label{tab:datasets}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lrrl@{}}
+\toprule
+\textbf{Source} & \textbf{Examples} & \textbf{Token rows} & \textbf{Role in experiment} \\
+\midrule
+\alpaca 52k & 60 & 5,119 & Instruction-output SFT traces \\
+\justeval & 60 & 1,422 & Prompt-only instruction boundary traces \\
+\beavertails 30k & 60 & 4,972 & Safety/refusal-related traces \\
+\arena mirror & 60 & 7,329 & Real chat prompt-response traces \\
+\wikitext Raw & 59 & 5,207 & Natural-text baseline \\
+\midrule
+\textbf{Total} & \textbf{299} & \textbf{24,049} & Multi-source divergence benchmark \\
+\bottomrule
+\end{tabular}
+}
+\end{table}

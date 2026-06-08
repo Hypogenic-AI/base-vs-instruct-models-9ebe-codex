@@ -1,0 +1,17 @@
+\section{Discussion}
+\label{sec:discussion}
+
+\para{Boundary effects are real but partly predictable.}
+Generation starts, prompt/response boundaries, and assistant markers show elevated divergence, especially in \beavertails. This matches prior evidence that instruction and safety tuning can concentrate changes in early or stylistically important tokens \citep{lin2023unlocking,ghosh2024limitations,qi2024safety}. The predictor results add a second point: many of these shifts are predictable from source and position alone. This is why residuals are useful. They separate common boundary effects from cases where boundary features over- or under-explain the actual distributional shift.
+
+\para{Natural text can produce surprising residuals.}
+The strongest positive misses were not refusal boilerplate, chat openings, or formatting tokens. They were concentrated in \wikitext narrative continuations. This finding does not prove that instruction tuning generally changes narrative modeling, because one example contributes many of the top residuals. It does show that a natural-text source can contain high-KL spans that surface-feature predictors do not expect. This is exactly the type of example residual auditing is designed to find.
+
+\para{Top-1 agreement is too weak for model comparison.}
+Several high-KL residuals have identical base and instruct top-1 tokens. A top-token comparison would mark those positions as agreement, but the full distributions differ sharply. For alignment auditing, this matters because downstream sampling behavior, refusal likelihood, and continuation diversity can depend on probability mass beyond the argmax. Full-distribution metrics such as KL and JS divergence are therefore better suited for triage than top-1 agreement alone.
+
+\para{Limitations.}
+This study uses one model pair at 1.5B parameters. Larger Qwen models, Gemma, Llama, and Mistral pairs may show different residual structure. The dataset sample is intentionally medium-scale: 299 examples and 24,049 token positions are enough to test the workflow, but not enough for a definitive taxonomy. The rich predictor uses observed-token surface features and base-model statistics, which is appropriate for teacher-forced analysis but not a deployment setting where future sampled tokens are unknown. We also do not include a base-plus-URIAL prompt control, so prompt-format effects and weight-level instruction-tuning effects remain partly entangled. Finally, residual labels are heuristic discovery aids, not mechanistic explanations.
+
+\para{Implications.}
+\methodname is best viewed as an audit queue. It does not replace careful qualitative analysis or activation-level validation, but it can focus that work on a small set of surprising positions. The natural next step is to expand natural-text sampling, inspect top-$k$ probability tables for high positive residuals, and test whether the same spans remain surprising under base-plus-prompt controls. After replication, activation-level tools such as refusal-direction probes or crosscoders can test whether high-residual spans correspond to stable internal differences.

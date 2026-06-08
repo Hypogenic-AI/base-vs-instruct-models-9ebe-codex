@@ -1,0 +1,14 @@
+PDF: papers/2504.02922_overcoming_sparsity_artifacts_in_crosscoders_to_interpret_chat_tuning.pdf
+Total pages: 45
+Pages per chunk: 5
+
+Chunks:
+  2504.02922_overcoming_sparsity_artifacts_in_crosscoders_to_interpret_chat_tuning_chunk_001.pdf: pages 1-5
+  2504.02922_overcoming_sparsity_artifacts_in_crosscoders_to_interpret_chat_tuning_chunk_002.pdf: pages 6-10
+  2504.02922_overcoming_sparsity_artifacts_in_crosscoders_to_interpret_chat_tuning_chunk_003.pdf: pages 11-15
+  2504.02922_overcoming_sparsity_artifacts_in_crosscoders_to_interpret_chat_tuning_chunk_004.pdf: pages 16-20
+  2504.02922_overcoming_sparsity_artifacts_in_crosscoders_to_interpret_chat_tuning_chunk_005.pdf: pages 21-25
+  2504.02922_overcoming_sparsity_artifacts_in_crosscoders_to_interpret_chat_tuning_chunk_006.pdf: pages 26-30
+  2504.02922_overcoming_sparsity_artifacts_in_crosscoders_to_interpret_chat_tuning_chunk_007.pdf: pages 31-35
+  2504.02922_overcoming_sparsity_artifacts_in_crosscoders_to_interpret_chat_tuning_chunk_008.pdf: pages 36-40
+  2504.02922_overcoming_sparsity_artifacts_in_crosscoders_to_interpret_chat_tuning_chunk_009.pdf: pages 41-45
