@@ -1,0 +1,25 @@
+idea:
+  title: What's surprisingly different between base and instruct models?
+  domain: artificial_intelligence
+  hypothesis: 'By comparing the token-by-token divergence between a base and an instruct
+    model, and training a model to predict the KL divergence (or similar measure)
+    at every token, we can identify locations where the divergence predictor fails.
+    These locations may reveal surprising or interesting differences between the models.
+
+    '
+  background:
+    description: 'Take a base and an instruct model. Look at the divergence between
+      their distributions, token by token. Train a model to predict the KL (or whatever)
+      between them at every token. Then look at places where the divergence predictor
+      is wrong. I think that''s where the interesting stuff will be.
+
+      '
+  metadata:
+    author: Ari Holtzman
+    source: IdeaHub
+    source_url: https://hypogenic.ai/ideahub/idea/WKCcIy2RGSNxGF87KZip
+    idea_id: what_s_surprisingly_different__20260608_215700_446ff9cc
+    created_at: '2026-06-08T21:57:00.905582'
+    status: submitted
+    github_repo_name: base-vs-instruct-models-9ebe-codex
+    github_repo_url: https://github.com/Hypogenic-AI/base-vs-instruct-models-9ebe-codex
